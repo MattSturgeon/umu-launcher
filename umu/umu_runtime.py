@@ -4,6 +4,7 @@ from collections.abc import Callable
 from concurrent.futures import Future, ThreadPoolExecutor
 from hashlib import sha256
 from http.client import HTTPException, HTTPResponse, HTTPSConnection
+from stat import S_IFREG, S_ISDIR, S_ISLNK, S_ISREG
 from struct import pack
 
 try:
@@ -488,35 +489,43 @@ def get_runtime_digest(path: Path) -> str:  # noqa: D103
     whitelist: tuple[str, ...] = (".lock", ".ref", "var", "umu.hashsum")
     fmt: str = "iffi"
 
-    # Find all runtime files and compute a hash of its metadata while ignoring
-    # some of our files.
+    # Find all runtime files and compute a hash of its metadata
     for file in (
-        steamrt_file
-        for steamrt_file in path.glob("*")
-        if not steamrt_file.name.endswith(whitelist)
+        file_toplvl
+        for file_toplvl in path.glob("*")
+        if not file_toplvl.name.endswith(whitelist)
     ):
-        if file.is_dir():
-            for subfile in file.rglob("*"):
-                if file.is_file() and not file.is_symlink():
-                    stat_ret: os.stat_result = file.stat()
-                    metadata: tuple[int, float, float, int] = (
+        # Get all normal files within directories
+        stat_ret: os.stat_result = file.stat()
+        if S_ISDIR(stat_ret.st_mode):
+            for subfile in (
+                file_subdir
+                for file_subdir in file.glob("*")
+                if file_subdir.is_file() and not file_subdir.is_symlink()
+            ):
+                stat_ret: os.stat_result = subfile.stat()
+                # Convert the metadata to bytes then hash it
+                hashsum.update(
+                    pack(
+                        fmt,
                         stat_ret.st_size,  # Size
                         stat_ret.st_mtime,  # Modification time
                         stat_ret.st_ctime,  # Creation time
                         stat_ret.st_mode,  # Permissions
                     )
-                    # Convert the metadata to bytes then hash it
-                    hashsum.update(pack(fmt, *metadata))
+                )
             continue
-        if file.is_file() and not file.is_symlink():
-            stat_ret: os.stat_result = file.stat()
-            metadata: tuple[int, float, float, int] = (
-                stat_ret.st_size,
-                stat_ret.st_mtime,
-                stat_ret.st_ctime,
-                stat_ret.st_mode,
+        # File is in the top-level and is a normal file
+        if S_ISREG(stat_ret.st_mode) and not S_ISLNK(stat_ret.st_mode):
+            hashsum.update(
+                pack(
+                    fmt,
+                    stat_ret.st_size,
+                    stat_ret.st_mtime,
+                    stat_ret.st_ctime,
+                    stat_ret.st_mode,
+                )
             )
-            hashsum.update(pack(fmt, *metadata))
 
     return hashsum.hexdigest()
 
