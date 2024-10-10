@@ -284,78 +284,40 @@ def _update_umu(
     log.debug("Runtime: %s", runtime.name)
     log.debug("Codename: %s", codename)
 
-    if not local.joinpath("pressure-vessel").is_dir():
-        log.debug("pressure-vessel directory missing in '%s'", local)
-        log.warning("Runtime Platform not found")
+    # Restore our runtime if our checksum file is missing
+    if not local.joinpath("umu.hashsum").is_file():
+        log.warning("Runtime Platform corrupt")
         log.console("Restoring Runtime Platform...")
+        rmtree(str(local))
         _restore_umu(
             json,
             thread_pool,
-            lambda: local.joinpath("pressure-vessel").is_dir(),
+            lambda: local.joinpath("umu").is_file(),
             client_session,
         )
         return
 
-    # Restore VERSIONS.txt
-    # When the file is missing, the request for the image will need to be made
-    # to the endpoint of the specific snapshot
-    if not local.joinpath("VERSIONS.txt").is_file():
-        url: str
-        release: Path = runtime.joinpath("files", "lib", "os-release")
-        versions: str = f"SteamLinuxRuntime_{codename}.VERSIONS.txt"
+    digest_ret = get_runtime_digest(local)
+    digest_local_ret = local.joinpath("umu.hashsum").read_text(
+        encoding="utf-8"
+    )
 
-        log.debug("VERSIONS.txt file missing in '%s'", local)
+    log.debug("Source: %s", local)
+    log.debug("Digest: %s", digest_ret)
+    log.debug("Source: %s", local / "umu.hashsum")
+    log.debug("Digest: %s", digest_local_ret)
 
-        # Restore the runtime if os-release is missing, otherwise pressure
-        # vessel will crash when creating the variable directory
-        if not release.is_file():
-            log.debug("os-release file missing in '%s'", local)
-            log.warning("Runtime Platform corrupt")
-            log.console("Restoring Runtime Platform...")
-            _restore_umu(
-                json,
-                thread_pool,
-                lambda: local.joinpath("VERSIONS.txt").is_file(),
-                client_session,
-            )
-            return
-
-        # Get the BUILD_ID value in os-release
-        with release.open(mode="r", encoding="utf-8") as file:
-            for line in file:
-                if line.startswith("BUILD_ID"):
-                    # Get the value after 'BUILD_ID=' and strip the quotes
-                    build_id: str = (
-                        line.removeprefix("BUILD_ID=").rstrip().strip('"')
-                    )
-                    url = (
-                        f"/steamrt-images-{codename}" f"/snapshots/{build_id}"
-                    )
-                    break
-
-        client_session.request("GET", f"{url}{token}")
-
-        with client_session.getresponse() as resp:
-            # Handle the redirect
-            if resp.status == 301:
-                location: str = resp.getheader("Location", "")
-                log.debug("Location: %s", resp.getheader("Location"))
-                # The stdlib requires reading the entire response body before
-                # making another request
-                resp.read()
-
-                # Make a request to the new location
-                client_session.request("GET", f"{location}/{versions}{token}")
-                with client_session.getresponse() as resp_redirect:
-                    if resp_redirect.status != 200:
-                        log.warning(
-                            "repo.steampowered.com returned the status: %s",
-                            resp_redirect.status,
-                        )
-                        return
-                    local.joinpath("VERSIONS.txt").write_text(
-                        resp.read().decode()
-                    )
+    if digest_ret != digest_local_ret:
+        log.warning("Runtime Platform corrupt")
+        log.console("Restoring Runtime Platform...")
+        rmtree(str(local))
+        _restore_umu(
+            json,
+            thread_pool,
+            lambda: local.joinpath("umu").is_file(),
+            client_session,
+        )
+        return
 
     # Update the runtime if necessary by comparing VERSIONS.txt to the remote
     # repo.steampowered currently sits behind a Cloudflare proxy, which may
