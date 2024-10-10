@@ -260,30 +260,6 @@ def _update_umu(
     log.debug("Existing install detected")
     log.debug("Sending request to '%s'...", client_session.host)
 
-    # Find the runtime directory (e.g., sniper_platform_0.20240530.90143)
-    # Assume the directory begins with the alias
-    try:
-        runtime = max(
-            file for file in local.glob(f"{codename}*") if file.is_dir()
-        )
-    except ValueError:
-        log.debug("*_platform_* directory missing in '%s'", local)
-        log.warning("Runtime Platform not found")
-        log.console("Restoring Runtime Platform...")
-        _restore_umu(
-            json,
-            thread_pool,
-            lambda: len(
-                [file for file in local.glob(f"{codename}*") if file.is_dir()]
-            )
-            > 0,
-            client_session,
-        )
-        return
-
-    log.debug("Runtime: %s", runtime.name)
-    log.debug("Codename: %s", codename)
-
     # Restore our runtime if our checksum file is missing
     if not local.joinpath("umu.hashsum").is_file():
         log.warning("Runtime Platform corrupt")
@@ -318,6 +294,13 @@ def _update_umu(
             client_session,
         )
         return
+
+    # Find the runtime directory (e.g., sniper_platform_0.20240530.90143)
+    # Assume the directory begins with the alias
+    runtime = max(file for file in local.glob(f"{codename}*") if file.is_dir())
+
+    log.debug("Runtime: %s", runtime.name)
+    log.debug("Codename: %s", codename)
 
     # Update the runtime if necessary by comparing VERSIONS.txt to the remote
     # repo.steampowered currently sits behind a Cloudflare proxy, which may
