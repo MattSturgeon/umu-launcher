@@ -4,6 +4,7 @@ from collections.abc import Callable
 from concurrent.futures import Future, ThreadPoolExecutor
 from hashlib import sha256
 from http.client import HTTPException, HTTPResponse, HTTPSConnection
+from struct import pack
 
 try:
     from importlib.resources.abc import Traversable
@@ -504,6 +505,46 @@ def check_runtime(src: Path, json: dict[str, Any]) -> int:
     log.console(f"{runtime.name}: mtree is OK")
 
     return ret
+
+
+def get_runtime_digest(path: Path) -> str:  # noqa: D103
+    hashsum = sha256()
+    # Ignore any lock files, the variable dir and our checksum file
+    # when computing the digest
+    whitelist: tuple[str, ...] = (".lock", ".ref", "var", "umu.hashsum")
+    fmt: str = "iffi"
+
+    # Find all runtime files and compute a hash of its metadata while ignoring
+    # some of our files.
+    for file in (
+        steamrt_file
+        for steamrt_file in path.glob("*")
+        if not steamrt_file.name.endswith(whitelist)
+    ):
+        if file.is_dir():
+            for subfile in file.rglob("*"):
+                if file.is_file() and not file.is_symlink():
+                    stat_ret: os.stat_result = file.stat()
+                    metadata: tuple[int, float, float, int] = (
+                        stat_ret.st_size,  # Size
+                        stat_ret.st_mtime,  # Modification time
+                        stat_ret.st_ctime,  # Creation time
+                        stat_ret.st_mode,  # Permissions
+                    )
+                    # Convert the metadata to bytes then hash it
+                    hashsum.update(pack(fmt, *metadata))
+            continue
+        if file.is_file() and not file.is_symlink():
+            stat_ret: os.stat_result = file.stat()
+            metadata: tuple[int, float, float, int] = (
+                stat_ret.st_size,
+                stat_ret.st_mtime,
+                stat_ret.st_ctime,
+                stat_ret.st_mode,
+            )
+            hashsum.update(pack(fmt, *metadata))
+
+    return hashsum.hexdigest()
 
 
 def _restore_umu(
