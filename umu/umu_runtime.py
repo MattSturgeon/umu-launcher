@@ -4,7 +4,7 @@ from collections.abc import Callable
 from concurrent.futures import Future, ThreadPoolExecutor
 from hashlib import sha256
 from http.client import HTTPException, HTTPResponse, HTTPSConnection
-from stat import S_IFREG, S_ISDIR, S_ISLNK, S_ISREG
+from stat import S_ISDIR, S_ISLNK, S_ISREG
 from struct import pack
 
 try:
