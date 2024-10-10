@@ -195,9 +195,8 @@ def _install_umu(
     if ret != 1:
         # At this point, the runtime is authenticated. For subsequent launches,
         # we'll check against our digest to ensure we're intact
-        digest_ret = get_runtime_digest(UMU_LOCAL)
         UMU_LOCAL.joinpath("umu.hashsum").write_text(
-            digest_ret, encoding="utf-8"
+            get_runtime_digest(UMU_LOCAL), encoding="utf-8"
         )
         return
 
