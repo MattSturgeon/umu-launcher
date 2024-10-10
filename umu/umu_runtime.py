@@ -470,6 +470,7 @@ def get_runtime_digest(path: Path) -> str:  # noqa: D103
     # when computing the digest
     whitelist: tuple[str, ...] = (".lock", ".ref", "var", "umu.hashsum")
     fmt: str = "iffi"
+    stat_ret: os.stat_result
 
     # Find all runtime files and compute a hash of its metadata
     for file in (
@@ -478,14 +479,14 @@ def get_runtime_digest(path: Path) -> str:  # noqa: D103
         if not file_toplvl.name.endswith(whitelist)
     ):
         # Get all normal files within directories
-        stat_ret: os.stat_result = file.stat()
+        stat_ret = file.stat()
         if S_ISDIR(stat_ret.st_mode):
             for subfile in (
                 file_subdir
                 for file_subdir in file.glob("*")
                 if file_subdir.is_file() and not file_subdir.is_symlink()
             ):
-                stat_ret: os.stat_result = subfile.stat()
+                stat_ret = subfile.stat()
                 # Convert the metadata to bytes then hash it
                 hashsum.update(
                     pack(
