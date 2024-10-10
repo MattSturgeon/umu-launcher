@@ -298,8 +298,8 @@ def _update_umu(
         )
         return
 
-    digest_ret = get_runtime_digest(local)
-    digest_local_ret = local.joinpath("umu.hashsum").read_text(
+    digest_ret: str = get_runtime_digest(local)
+    digest_local_ret: str = local.joinpath("umu.hashsum").read_text(
         encoding="utf-8"
     )
 
