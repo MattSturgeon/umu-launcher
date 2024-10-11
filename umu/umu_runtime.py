@@ -536,8 +536,10 @@ def _restore_umu(
     callback_fn: Callable[[], bool],
     client_session: HTTPSConnection,
 ) -> None:
-    with FileLock(f"{UMU_LOCAL}/umu.lock") as lock:
-        log.debug("Acquired file lock '%s'...", lock.lock_file)
+    lock: FileLock = FileLock(f"{UMU_LOCAL}/umu.lock")
+    log.debug("Acquiring file lock '%s'...", lock.lock_file)
+    with lock:
+        log.debug("Acquired file lock '%s'", lock.lock_file)
         if callback_fn():
             log.debug("Released file lock '%s'", lock.lock_file)
             log.console("steamrt was restored")
