@@ -271,8 +271,8 @@ def _update_umu(
             log.debug("Acquired file lock '%s'", lock.lock_file)
             for file in local.glob("*"):
                 if file.is_dir():
-                    thread_pool.submit(rmtree, str(file))
                 if file.is_file() and file != lock.lock_file:
+                    rmtree(str(file))
                     file.unlink()
         _restore_umu(
             json,
@@ -301,8 +301,8 @@ def _update_umu(
             log.debug("Acquired file lock '%s'", lock.lock_file)
             for file in local.glob("*"):
                 if file.is_dir():
-                    thread_pool.submit(rmtree, str(file))
                 if file.is_file() and file != lock.lock_file:
+                    rmtree(str(file))
                     file.unlink()
         _restore_umu(
             json,
