@@ -257,12 +257,13 @@ def _update_umu(
         "/snapshots/latest-container-runtime-public-beta"
     )
     token: str = f"?version={token_urlsafe(16)}"
+    checksum: Path = local.joinpath("umu.hashsum")
     log.debug("Existing install detected")
     log.debug("Sending request to '%s'...", client_session.host)
 
     # Restore our runtime if our checksum file is missing
-    if not local.joinpath("umu.hashsum").is_file():
-        log.warning("Runtime Platform corrupt")
+    if not checksum.is_file():
+        log.warning("File '%s' is missing", checksum)
         log.console("Restoring Runtime Platform...")
         rmtree(str(local))
         _restore_umu(
