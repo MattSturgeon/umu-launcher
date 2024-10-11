@@ -263,9 +263,17 @@ def _update_umu(
 
     # Restore our runtime if our checksum file is missing
     if not checksum.is_file():
+        lock: FileLock = FileLock(f"{local}/umu.lock")
         log.warning("File '%s' is missing", checksum)
         log.console("Restoring Runtime Platform...")
-        rmtree(str(local))
+        log.debug("Acquiring file lock '%s'...", lock.lock_file)
+        with lock:
+            log.debug("Acquired file lock '%s'", lock.lock_file)
+            for file in local.glob("*"):
+                if file.is_dir():
+                    thread_pool.submit(rmtree, str(file))
+                if file.is_file() and file != lock.lock_file:
+                    file.unlink()
         _restore_umu(
             json,
             thread_pool,
@@ -285,9 +293,17 @@ def _update_umu(
     log.debug("Digest: %s", digest_local_ret)
 
     if digest_ret != digest_local_ret:
+        lock: FileLock = FileLock(f"{local}/umu.lock")
         log.warning("Runtime Platform corrupt")
         log.console("Restoring Runtime Platform...")
-        rmtree(str(local))
+        log.debug("Acquiring file lock '%s'...", lock.lock_file)
+        with lock:
+            log.debug("Acquired file lock '%s'", lock.lock_file)
+            for file in local.glob("*"):
+                if file.is_dir():
+                    thread_pool.submit(rmtree, str(file))
+                if file.is_file() and file != lock.lock_file:
+                    file.unlink()
         _restore_umu(
             json,
             thread_pool,
