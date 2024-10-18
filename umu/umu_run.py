@@ -198,7 +198,9 @@ def set_env(
     # Command execution usage, but client wants to create a prefix. When an
     # empty string is the executable, Proton is expected to create the prefix
     # but will fail because the executable is not found
-    is_createpfx: bool = is_cmd and not args[0]  # type: ignore
+    is_createpfx: bool = (
+        is_cmd and not args[0] or is_cmd and args[0] == "createprefix"
+    )  # type: ignore
     # Command execution usage, but client wants to run winetricks verbs
     is_winetricks: bool = is_cmd and args[0] == "winetricks"  # type: ignore
 
@@ -577,6 +579,8 @@ def run_in_steammode(proc: Popen) -> int:
     gamescope_baselayer_sequence: list[int] | None = None
     # Windows that will be assigned Steam's layer ID
     window_client_list: set[str] | None = None
+    is_createpfx: bool = os.environ.get("EXE") == ""
+    is_winetricks: bool = os.environ.get("EXE", "").endswith("winetricks")
 
     # Currently, steamos creates two xwayland servers at :0 and :1
     # Despite the socket for display :0 being hidden at /tmp/.x11-unix in
@@ -591,8 +595,13 @@ def run_in_steammode(proc: Popen) -> int:
             gamescope_baselayer_sequence = get_gamescope_baselayer_order(d_primary)
 
             # Dont do window fuckery if we're not inside gamescope
-            if gamescope_baselayer_sequence and not os.environ.get("EXE", "").endswith(
-                "winetricks"
+            # Note: If the executable is one that exists in the WINE prefix
+            # or container it is possible that umu wil hang when running a
+            # game within a gamescope session
+            if (
+                gamescope_baselayer_sequence
+                and not is_createpfx
+                and not is_winetricks
             ):
                 d_secondary.screen().root.change_attributes(
                     event_mask=X.SubstructureNotifyMask
