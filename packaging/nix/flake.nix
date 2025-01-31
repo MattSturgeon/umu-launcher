@@ -19,13 +19,13 @@
     supportedPkgs = lib.filterAttrs (system: _: builtins.elem system platforms) nixpkgs.legacyPackages;
 
     # Use the current revision for the default version
-    version = self.dirtyShortRev or self.shortRev or self.lastModifiedDate;
-  in
-  assert lib.assertMsg self.sourceInfo.submodules ''
-    umu-launcher: must have `submodules` enabled in order to build.
-    E.g. `?dir=packaging/nix&submodules=1`
-  '';
-  {
+    version =
+      assert lib.assertMsg self.sourceInfo.submodules ''
+        umu-launcher: must have `submodules` enabled in order to build.
+        E.g. `?dir=packaging/nix&submodules=1`
+      '';
+      self.dirtyShortRev or self.shortRev or self.lastModifiedDate;
+  in {
     overlays.default = final: prev: {
       umu-launcher = final.callPackage ./package.nix {
         inherit (prev) umu-launcher;
