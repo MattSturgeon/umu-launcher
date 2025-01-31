@@ -20,7 +20,12 @@
 
     # Use the current revision for the default version
     version = self.dirtyShortRev or self.shortRev or self.lastModifiedDate;
-  in {
+  in
+  assert lib.assertMsg self.submodules ''
+    umu-launcher: must have `submodules` enabled in order to build.
+    E.g. `?dir=packaging/nix&submodules=1`
+  '';
+  {
     overlays.default = final: prev: {
       umu-launcher = final.callPackage ./package.nix {
         inherit (prev) umu-launcher;
