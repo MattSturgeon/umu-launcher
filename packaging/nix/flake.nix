@@ -39,7 +39,7 @@
     packages =
       builtins.mapAttrs (system: pkgs: rec {
         default = umu-launcher.overrideAttrs {
-          passthru = { inherit (self) sourceInfo; };
+          passthru = { inherit (self) submodules; };
         };
         inherit
           (pkgs.extend self.overlays.default)
