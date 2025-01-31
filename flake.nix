@@ -27,10 +27,10 @@
       self.dirtyShortRev or self.shortRev or self.lastModifiedDate;
   in {
     overlays.default = final: prev: {
-      umu-launcher = final.callPackage ./package.nix {
+      umu-launcher = final.callPackage ./packaging/nix/package.nix {
         inherit (prev) umu-launcher;
       };
-      umu-launcher-unwrapped = final.callPackage ./unwrapped.nix {
+      umu-launcher-unwrapped = final.callPackage ./packaging/nix/unwrapped.nix {
         inherit (prev) umu-launcher-unwrapped;
         inherit version;
       };
