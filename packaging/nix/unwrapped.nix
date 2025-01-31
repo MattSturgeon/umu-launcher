@@ -46,6 +46,7 @@ umu-launcher-unwrapped.overridePythonAttrs (prev: {
   nativeBuildInputs =
     (prev.nativeBuildInputs or [])
     ++ [
+      python3Packages.hatch-vcs
       rustPlatform.cargoSetupHook
       cargo
     ];
