@@ -20,13 +20,28 @@ umu-launcher-unwrapped.overridePythonAttrs (prev: {
   #   https://github.com/Open-Wine-Components/umu-launcher/pull/289
   # - The other is backporting:
   #   https://github.com/Open-Wine-Components/umu-launcher/pull/343
-  patches = [
-    # Remove `umu-vendored` from the `all` target
-    # This causes an error when building vendored dependencies:
-    # python3 -m pip install urllib3 -t builddir
-    # => No module named pip
-    ./0-Makefile-no-vendor.patch
-  ];
+  patches = [];
+
+  # The `all` target contains `umu-vendored` which causes an error:
+  # cd: subprojects/urllib3: No such file or directory
+  #
+  # Avoid this by specifying build targets explicitly
+  buildFlags =
+    (prev.buildFlags or [])
+    ++ [
+      "umu-dist"
+      "umu-launcher"
+    ];
+
+  # Same issue for install targets
+  installTargets =
+    (prev.installTargets or [])
+    ++ [
+      "umu-dist"
+      "umu-docs"
+      "umu-launcher"
+      "umu-delta"
+    ];
 
   nativeBuildInputs =
     (prev.nativeBuildInputs or [])
