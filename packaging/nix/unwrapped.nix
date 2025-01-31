@@ -20,13 +20,28 @@ umu-launcher-unwrapped.overridePythonAttrs (prev: {
   #   https://github.com/Open-Wine-Components/umu-launcher/pull/289
   # - The other is backporting:
   #   https://github.com/Open-Wine-Components/umu-launcher/pull/343
-  patches = [
-    # Remove `umu-vendored` from the `all` target
-    # This causes an error when building vendored dependencies:
-    # python3 -m pip install urllib3 -t builddir
-    # => No module named pip
-    ./0-Makefile-no-vendor.patch
-  ];
+  patches = [];
+
+  # FIXME:
+  # The flake needs submodules in order to build the `umu-vendored` target.
+  # Specifying `?submodules=1` should be enough, but in my testing it was ineffective.
+  # As a temporary workaround, explicitly specify the supported build targets:
+  buildFlags =
+    (prev.buildFlags or [])
+    ++ [
+      "umu-dist"
+      "umu-launcher"
+    ];
+
+  # Same issue for install targets
+  installTargets =
+    (prev.installTargets or [])
+    ++ [
+      "umu-dist"
+      "umu-docs"
+      "umu-launcher"
+      "umu-delta"
+    ];
 
   nativeBuildInputs =
     (prev.nativeBuildInputs or [])
